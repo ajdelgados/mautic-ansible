@@ -1,0 +1,6 @@
+- src: https://github.com/geerlingguy/ansible-role-php-versions
+- src: https://github.com/geerlingguy/ansible-role-php
+- src: https://github.com/geerlingguy/ansible-role-composer
+- src: https://github.com/geerlingguy/ansible-role-certbot
+- src: https://github.com/geerlingguy/ansible-role-mysql
+- src: https://github.com/geerlingguy/ansible-role-nginx
