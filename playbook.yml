@@ -118,3 +118,18 @@
         - "/home/ubuntu/{{project_name}}/media/files"
         - "/home/ubuntu/{{project_name}}/media/images"
         - "/home/ubuntu/{{project_name}}/translations"
+    - name: Added Mautic Segments Update cron
+      ansible.builtin.cron:
+        name: Mautic Segments Update
+        minute: "1,16,31,46"
+        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:segments:update"
+    - name: Added Mautic Campaigns Update cron
+      ansible.builtin.cron:
+        name: Mautic Campaigns Update
+        minute: "3,18,33,48"
+        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:update"
+    - name: Added Mautic Campaigns Trigger cron
+      ansible.builtin.cron:
+        name: Mautic Campaigns Trigger
+        minute: "*/2"
+        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger"
