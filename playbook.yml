@@ -73,30 +73,51 @@
   tasks:
     - name: Check if Mautic was cloned before
       stat:
-        path: "/home/ubuntu/{{project_name}}"
+        path: /home/ubuntu/{{project_name}}
       register: mautic
     - name: Clone Mautic
       git:
         repo: https://github.com/mautic/mautic.git
-        dest: "/home/ubuntu/{{project_name}}"
-        version: "3.3.2"
+        dest: /home/ubuntu/{{project_name}}
+        version: "3.3.3"
       when: not mautic.stat.exists
     - name: Execute composer install
       command: composer install
       args:
-        chdir: "/home/ubuntu/{{project_name}}"
+        chdir: /home/ubuntu/{{project_name}}
       when: not mautic.stat.exists
+    - name: Check if MauticRecaptchaBundle was cloned before
+      stat:
+        path: /home/ubuntu/{{project_name}}/plugins/MauticRecaptchaBundle
+      register: mauticRecaptcha
+    - name: Clone MauticRecaptchaBundle
+      git:
+        repo: https://github.com/konstantincodes/mautic-recaptcha.git
+        dest: /home/ubuntu/{{project_name}}/plugins/MauticRecaptchaBundle
+        version: "3.0.1"
+      when: not mauticRecaptcha.stat.exists
+    - name: Check if local configs exists
+      stat:
+        path: /home/ubuntu/{{project_name}}/app/config/local.php
+      register: mauticLocal
+    - name: Modify local configs
+      replace:
+        path: /home/ubuntu/{{project_name}}/app/config/local.php
+        regexp: '\/index.php'
+        replace: ''
+        backup: yes
+      when: mauticLocal.stat.exists
     - name: Create logs directory
       file:
-        path: "/home/ubuntu/{{project_name}}/app/logs"
+        path: /home/ubuntu/{{project_name}}/app/logs
         state: directory
     - name: Create cache directory
       file:
-        path: "/home/ubuntu/{{project_name}}/app/cache"
+        path: /home/ubuntu/{{project_name}}/app/cache
         state: directory
     - name: Change ownership
       file:
-        path: "/home/ubuntu/{{project_name}}"
+        path: /home/ubuntu/{{project_name}}
         state: directory
         recurse: yes
         owner: www-data
@@ -118,18 +139,18 @@
         - "/home/ubuntu/{{project_name}}/media/files"
         - "/home/ubuntu/{{project_name}}/media/images"
         - "/home/ubuntu/{{project_name}}/translations"
-    - name: Added Mautic Segments Update cron
-      ansible.builtin.cron:
+    - name: Add Mautic Segments Update cron
+      cron:
         name: Mautic Segments Update
         minute: "1,16,31,46"
-        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:segments:update"
-    - name: Added Mautic Campaigns Update cron
-      ansible.builtin.cron:
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:segments:update
+    - name: Add Mautic Campaigns Update cron
+      cron:
         name: Mautic Campaigns Update
-        minute: "3,18,33,48"
-        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:update"
-    - name: Added Mautic Campaigns Trigger cron
-      ansible.builtin.cron:
+        minute: 3,18,33,48
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:update
+    - name: Add Mautic Campaigns Trigger cron
+      cron:
         name: Mautic Campaigns Trigger
         minute: "*/2"
-        job: "php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger"
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger
