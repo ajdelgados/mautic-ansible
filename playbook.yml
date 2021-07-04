@@ -60,6 +60,9 @@
         password: "{{project_name}}"
         host: localhost
         priv: "{{project_name}}.*:ALL"
+    mysql_packages:
+      - mariadb-server
+      - mariadb-common
   roles:
     - ansible-role-php-versions
     - ansible-role-php
