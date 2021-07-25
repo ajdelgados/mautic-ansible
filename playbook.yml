@@ -63,6 +63,9 @@
     mysql_packages:
       - mariadb-server
       - mariadb-common
+    mysql_config_include_files: [
+      src: "{{playbook_dir}}/templates/performance.cnf"
+    ]
   roles:
     - ansible-role-php-versions
     - ansible-role-php

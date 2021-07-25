@@ -1,0 +1,3 @@
+[mysqld]
+performance_schema = off
+innodb_buffer_pool_size = 512M
