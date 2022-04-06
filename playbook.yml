@@ -66,6 +66,8 @@
     mysql_config_include_files: [
       src: "{{playbook_dir}}/templates/performance.cnf"
     ]
+  # OJO: Meter la opción de monitor de Nginx https://www.nginx.com/blog/monitoring-nginx/ 
+  # para saber los usuario en línea
   roles:
     - ansible-role-php-versions
     - ansible-role-php
@@ -160,3 +162,25 @@
         name: Mautic Campaigns Trigger
         minute: "*/2"
         job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger
+    - name: Copy file Free Memory
+      copy:
+        src: free-memory.sh
+        dest: /home/free-memory.sh
+        owner: root
+        group: root
+        mode: '0700'
+    - name: Add Free Memory cron
+      cron:
+        name: Free Memory
+        minute: "7"
+        job: /home/free-memory.sh >> /home/free-memory.log
+    - name: Install python3-certbot-nginx
+      apt: name=python3-certbot-nginx state=present
+    - name: Add Reload Cerbot certificate
+      cron:
+        name: Reload Cerbot certificate
+        minute: "0"
+        hour: "0"
+        day: "1"
+        month: "*/2"
+        job: certbot certonly --nginx -n -d {{project_name}}.{{project_domain}} && nginx -s reload
