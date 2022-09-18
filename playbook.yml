@@ -4,17 +4,18 @@
   vars:
     project_name: 
     project_domain: 
-    php_version: '7.4'
+    php_version: '8.0'
+    php_default_version_debian: ""
     php_packages_extra: 
-      - php7.4-mysql
-      - php7.4-curl
-      - php7.4-xml
-      - php7.4-zip
-      - php7.4-imap
-      - php7.4-bcmath
-      - php7.4-mbstring
-      - php7.4-gd
-      - php7.4-intl
+      - php8.0-mysql
+      - php8.0-curl
+      - php8.0-xml
+      - php8.0-zip
+      - php8.0-imap
+      - php8.0-bcmath
+      - php8.0-mbstring
+      - php8.0-gd
+      - php8.0-intl
     php_enable_php_fpm: true
     php_versions_install_recommends: false
     php_memory_limit: "512M"
@@ -23,8 +24,13 @@
       - pool_name: "{{project_name}}"
         pool_template: www.conf.j2
         pool_listen: "/run/php/{{project_name}}.sock"
+        pool_pm_max_children: 5
+        pool_pm_start_servers: 2
+        pool_pm_max_requests: 3
+        pool_pm_min_spare_servers: 2
+        pool_pm_max_spare_servers: 5
     composer_version_branch: ''
-    composer_version: '1.10.21'
+    composer_version: '2.4.2'
     nginx_vhosts:
       - listen: "443 ssl http2"
         force_ssl: true
@@ -79,6 +85,12 @@
     - name: add www-data group to ubuntu user
       user: name=ubuntu groups=www-data append=yes
   tasks:
+    - name: Update php.ini
+      lineinfile:
+        path: /etc/php/{{php_version}}/fpm/php.ini
+        regexp: '^zend.assertions ='
+        line: 'zend.assertions = -1'
+        state: present
     - name: Check if Mautic was cloned before
       stat:
         path: /home/ubuntu/{{project_name}}
@@ -87,10 +99,10 @@
       git:
         repo: https://github.com/mautic/mautic.git
         dest: /home/ubuntu/{{project_name}}
-        version: "3.3.3"
+        version: "4.4.2"
       when: not mautic.stat.exists
     - name: Execute composer install
-      command: composer install
+      command: composer install -n
       args:
         chdir: /home/ubuntu/{{project_name}}
       when: not mautic.stat.exists
@@ -102,7 +114,7 @@
       git:
         repo: https://github.com/konstantincodes/mautic-recaptcha.git
         dest: /home/ubuntu/{{project_name}}/plugins/MauticRecaptchaBundle
-        version: "3.0.1"
+        version: "3.1.0"
       when: not mauticRecaptcha.stat.exists
     - name: Check if local configs exists
       stat:
