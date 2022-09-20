@@ -6,6 +6,7 @@
     project_domain: 
     php_version: '8.0'
     php_default_version_debian: ""
+    php_expose_php: "Off"
     php_packages_extra: 
       - php8.0-mysql
       - php8.0-curl
@@ -26,11 +27,12 @@
         pool_listen: "/run/php/{{project_name}}.sock"
         pool_pm_max_children: 5
         pool_pm_start_servers: 2
-        pool_pm_max_requests: 3
         pool_pm_min_spare_servers: 2
         pool_pm_max_spare_servers: 5
+        pool_pm_max_requests: 20
     composer_version_branch: ''
     composer_version: '2.4.2'
+    nginx_server_tokens: "off"
     nginx_vhosts:
       - listen: "443 ssl http2"
         force_ssl: true
@@ -59,6 +61,7 @@
     certbot_certs:
     - domains:
         - "{{project_name}}.{{project_domain}}"
+    # mysql_key_buffer_size: "200M"
     mysql_databases:
       - name: "{{project_name}}"
     mysql_users:
@@ -69,9 +72,9 @@
     mysql_packages:
       - mariadb-server
       - mariadb-common
-    mysql_config_include_files: [
-      src: "{{playbook_dir}}/templates/performance.cnf"
-    ]
+    # mysql_config_include_files: [
+    #   src: "{{playbook_dir}}/templates/performance.cnf"
+    # ]
   # OJO: Meter la opción de monitor de Nginx https://www.nginx.com/blog/monitoring-nginx/ 
   # para saber los usuario en línea
   roles:
@@ -116,17 +119,6 @@
         dest: /home/ubuntu/{{project_name}}/plugins/MauticRecaptchaBundle
         version: "3.1.0"
       when: not mauticRecaptcha.stat.exists
-    - name: Check if local configs exists
-      stat:
-        path: /home/ubuntu/{{project_name}}/app/config/local.php
-      register: mauticLocal
-    - name: Modify local configs
-      replace:
-        path: /home/ubuntu/{{project_name}}/app/config/local.php
-        regexp: '\/index.php'
-        replace: ''
-        backup: yes
-      when: mauticLocal.stat.exists
     - name: Create logs directory
       file:
         path: /home/ubuntu/{{project_name}}/app/logs
@@ -159,21 +151,6 @@
         - "/home/ubuntu/{{project_name}}/media/files"
         - "/home/ubuntu/{{project_name}}/media/images"
         - "/home/ubuntu/{{project_name}}/translations"
-    - name: Add Mautic Segments Update cron
-      cron:
-        name: Mautic Segments Update
-        minute: "1,16,31,46"
-        job: php /home/ubuntu/{{project_name}}/bin/console mautic:segments:update
-    - name: Add Mautic Campaigns Update cron
-      cron:
-        name: Mautic Campaigns Update
-        minute: 3,18,33,48
-        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:update
-    - name: Add Mautic Campaigns Trigger cron
-      cron:
-        name: Mautic Campaigns Trigger
-        minute: "*/2"
-        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger
     - name: Copy file Free Memory
       copy:
         src: free-memory.sh
@@ -181,18 +158,5 @@
         owner: root
         group: root
         mode: '0700'
-    - name: Add Free Memory cron
-      cron:
-        name: Free Memory
-        minute: "7"
-        job: /home/free-memory.sh >> /home/free-memory.log
     - name: Install python3-certbot-nginx
       apt: name=python3-certbot-nginx state=present
-    - name: Add Reload Cerbot certificate
-      cron:
-        name: Reload Cerbot certificate
-        minute: "0"
-        hour: "0"
-        day: "1"
-        month: "*/2"
-        job: certbot certonly --nginx -n -d {{project_name}}.{{project_domain}} && nginx -s reload

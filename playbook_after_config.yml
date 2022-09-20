@@ -1,0 +1,51 @@
+- hosts: all
+  become: yes
+  user: ubuntu
+  vars:
+    project_name: 
+    project_domain: 
+  tasks:
+    - name: Check if local configs exists
+      stat:
+        path: /home/ubuntu/{{project_name}}/app/config/local.php
+      register: mauticLocal
+    - name: Modify local configs
+      replace:
+        path: /home/ubuntu/{{project_name}}/app/config/local.php
+        regexp: '\/index.php'
+        replace: ''
+        backup: yes
+      when: mauticLocal.stat.exists
+    - name: Add Mautic Segments Update cron
+      cron:
+        name: Mautic Segments Update
+        minute: "1,16,31,46"
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:segments:update
+      when: mauticLocal.stat.exists
+    - name: Add Mautic Campaigns Update cron
+      cron:
+        name: Mautic Campaigns Update
+        minute: 3,18,33,48
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:update
+      when: mauticLocal.stat.exists
+    - name: Add Mautic Campaigns Trigger cron
+      cron:
+        name: Mautic Campaigns Trigger
+        minute: "*/2"
+        job: php /home/ubuntu/{{project_name}}/bin/console mautic:campaigns:trigger
+      when: mauticLocal.stat.exists
+    - name: Add Free Memory cron
+      cron:
+        name: Free Memory
+        minute: "7"
+        job: /home/free-memory.sh >> /home/free-memory.log
+      when: mauticLocal.stat.exists
+    - name: Add Reload Cerbot certificate
+      cron:
+        name: Reload Cerbot certificate
+        minute: "0"
+        hour: "0"
+        day: "1"
+        month: "*/2"
+        job: certbot certonly --nginx -n -d {{project_name}}.{{project_domain}} && nginx -s reload
+      when: mauticLocal.stat.exists
